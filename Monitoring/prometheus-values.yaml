@@ -77,8 +77,3 @@ prometheus:
             regex: Running
             action: keep
 
-  # --------------------------
-  # Disable Node Exporter
-  # --------------------------
-  nodeExporter:
-    enabled: false
