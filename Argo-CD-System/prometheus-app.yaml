@@ -18,7 +18,7 @@ spec:
           - $values/Monitoring/prometheus-values.yaml  # Path in Git repo
 
     # 2️⃣ Values file source from Git repo
-    - repoURL: 'https://github.com/maheshgowdamg/Argocd-deploy.git'
+    - repoURL: 'https://github.com/maheshgowdamg/Grafana-Monitoring.git'
       targetRevision: HEAD
       ref: values
 
