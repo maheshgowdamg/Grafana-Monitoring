@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus-grafana
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    namespace: monitoring
+    server: https://kubernetes.default.svc
+  sources:
+    # 1️⃣ Chart source (kube-prometheus-stack)
+    - chart: kube-prometheus-stack
+      repoURL: https://prometheus-community.github.io/helm-charts
+      targetRevision: 65.4.0
+      helm:
+        valueFiles:
+          - $values/Monitoring/prometheus-values.yaml  # Path in Git repo
+
+    # 2️⃣ Values file source from Git repo
+    - repoURL: 'https://github.com/maheshgowdamg/Argocd-deploy.git'
+      targetRevision: HEAD
+      ref: values
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+

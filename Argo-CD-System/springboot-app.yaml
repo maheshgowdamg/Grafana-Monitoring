@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: springboot-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/maheshgowdamg/springboot-app.git'
+    targetRevision: main             # or use "main" if that's your branch
+    path: mychart                    # <--- chart directory inside repo
+    helm:
+      valueFiles:
+        - values.yaml                # default values.yaml inside mychart
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: dev                   # <--- target namespace
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true          # auto-create namespace if not exists

@@ -1,0 +1,91 @@
+loki:
+  enabled: true
+  persistence:
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    size: 3Gi  # Must match existing PVC
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 800m
+      memory: 3000Mi
+  compactor:
+    enabled: true
+  config:
+    auth_enabled: false
+    server:
+      http_listen_port: 3100
+    ingester:
+      lifecycler:
+        ring:
+          kvstore:
+            store: inmemory
+          replication_factor: 1
+        final_sleep: 0s
+      chunk_idle_period: 3h            # ↑ Keep chunks longer
+      max_chunk_age: 3h                # ↑ Max age before chunk is sealed
+      chunk_retain_period: 1h          # ↑ Retain chunks for 1h after sealing
+      wal:
+        enabled: true
+        dir: /data/wal
+    limits_config:
+      retention_period: 72h            # 3 days retention
+      max_query_lookback: 72h
+    chunk_store_config:
+      max_look_back_period: 72h
+    schema_config:
+      configs:
+        - from: 2020-10-24
+          store: boltdb-shipper
+          object_store: filesystem
+          schema: v11
+          index:
+            prefix: index_
+            period: 24h
+    storage_config:
+      boltdb_shipper:
+        active_index_directory: /data/index
+        cache_location: /data/boltdb-cache
+        shared_store: filesystem
+      filesystem:
+        directory: /data/chunks
+    table_manager:
+      retention_deletes_enabled: true
+      retention_period: 72h
+    compactor:
+      compaction_interval: 5m
+      shared_store: filesystem
+      retention_enabled: true
+      retention_delete_delay: 5m
+      retention_delete_worker_count: 15
+
+promtail:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 3101
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 10
+  config:
+    clients:
+      - url: http://loki:3100/loki/api/v1/push
+    positions:
+      filename: /data/positions.yaml
+    scrape_configs:
+      - job_name: system
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: varlogs
+              __path__: /var/log/**/*.log

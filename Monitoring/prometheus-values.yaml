@@ -1,0 +1,84 @@
+grafana:
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+
+  persistence:
+    enabled: true
+    size: 2Gi
+
+  additionalDataSources:
+    - name: Prometheus
+      type: prometheus
+      access: proxy
+      url: http://prometheus-grafana-kube-pr-prometheus:9090
+      isDefault: true
+
+prometheus:
+  prometheusSpec:
+    logFormat: json
+    logLevel: warn
+    retention: 7d
+    retentionSize: 3GB
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 2Gi
+
+    # --------------------------
+    # Scrape jobs
+    # --------------------------
+    additionalScrapeConfigs:
+      # PostgreSQL
+      - job_name: "postgresql-monitoring"
+        metrics_path: /metrics
+        scrape_interval: 30s
+        scrape_timeout: 30s
+        static_configs:
+          - targets:
+              - postgresql-primary-metrics.dev.svc.cluster.local:9187
+              - postgresql-read-metrics.dev.svc.cluster.local:9187
+        
+      # MongoDB
+      - job_name: "mongodb-monitoring"
+        metrics_path: /metrics
+        scrape_interval: 30s
+        scrape_timeout: 30s
+        static_configs:
+          - targets:
+              - mongodb-metrics.dev.svc.cluster.local:9216
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: mongodb-metrics.dev.svc.cluster.local:9216
+
+      # Spring Boot JVM
+      - job_name: "springboot-jvm-monitoring"
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: ["dev"]
+        relabel_configs:
+          - target_label: __metrics_path__
+            replacement: /actuator/prometheus
+          - source_labels: [__meta_kubernetes_pod_ip]
+            target_label: __address__
+            replacement: ${1}:8080
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: instance
+          - source_labels: [__meta_kubernetes_pod_phase]
+            regex: Running
+            action: keep
+
+  # --------------------------
+  # Disable Node Exporter
+  # --------------------------
+  nodeExporter:
+    enabled: false
