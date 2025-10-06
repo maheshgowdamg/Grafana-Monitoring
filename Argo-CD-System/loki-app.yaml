@@ -15,7 +15,7 @@ spec:
           - $values/Monitoring/loki-values.yaml
 
     # 2️⃣ Git repo source containing your loki-values.yaml
-    - repoURL: 'https://github.com/maheshgowdamg/Argocd-deploy.git'
+    - repoURL: 'https://github.com/maheshgowdamg/Grafana-Monitoring.git'
       targetRevision: HEAD
       ref: values
 
